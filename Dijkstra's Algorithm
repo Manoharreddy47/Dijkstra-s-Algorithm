@@ -1,0 +1,99 @@
+#include <iostream>
+#include <vector>
+#include <set>
+#include <limits>
+#include <unordered_map>
+#include <algorithm> // For std::reverse
+
+using namespace std;
+
+class Graph {
+public:
+    // Adjacency list representation
+    unordered_map<int, vector<pair<int, int>>> adj;
+
+    void addEdge(int u, int v, int weight) {
+        adj[u].push_back(make_pair(v, weight));
+        adj[v].push_back(make_pair(u, weight)); // For undirected graph
+    }
+
+    pair<int, vector<int>> dijkstra(int start, int end) {
+        // Priority queue for maintaining the minimum distances
+        set<pair<int, int>> pq; // {distance, vertex}
+        unordered_map<int, int> dist;
+        unordered_map<int, int> parent;
+
+        // Initialize distances to infinity
+        for (const auto& node : adj) {
+            dist[node.first] = numeric_limits<int>::max();
+        }
+
+        dist[start] = 0;
+        pq.insert({0, start});
+
+        while (!pq.empty()) {
+            int u = pq.begin()->second;
+            pq.erase(pq.begin());
+
+            if (u == end) break; // Stop if we reach the destination
+
+            for (const auto& neighbor : adj[u]) {
+                int v = neighbor.first;
+                int weight = neighbor.second;
+
+                if (dist[u] + weight < dist[v]) {
+                    pq.erase({dist[v], v});
+                    dist[v] = dist[u] + weight;
+                    parent[v] = u;
+                    pq.insert({dist[v], v});
+                }
+            }
+        }
+
+        // Reconstruct path
+        vector<int> path;
+        for (int at = end; at != start; at = parent[at]) {
+            if (parent.find(at) == parent.end()) {
+                // If 'at' has no parent, there's no path
+                return {numeric_limits<int>::max(), {}};
+            }
+            path.push_back(at);
+        }
+        path.push_back(start);
+        reverse(path.begin(), path.end());
+
+        return {dist[end], path};
+    }
+};
+
+int main() {
+    Graph g;
+    // Hardcoded graph data
+    g.addEdge(0, 1, 4);
+    g.addEdge(0, 2, 1);
+    g.addEdge(2, 1, 2);
+    g.addEdge(1, 3, 1);
+    g.addEdge(2, 3, 5);
+
+    int start, end;
+    cout << "Enter starting node: ";
+    cin >> start;
+    cout << "Enter ending node: ";
+    cin >> end;
+
+    auto result = g.dijkstra(start, end);
+    int cost = result.first;
+    vector<int> path = result.second;
+
+    if (cost == numeric_limits<int>::max()) {
+        cout << "No path exists between " << start << " and " << end << ".\n";
+    } else {
+        cout << "Cost of shortest path: " << cost << "\nPath: ";
+        for (int node : path) {
+            cout << node << " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
